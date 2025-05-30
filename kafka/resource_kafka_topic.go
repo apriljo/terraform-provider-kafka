@@ -274,6 +274,10 @@ func topicRead(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	errSet.Set("name", topic.Name)
 	errSet.Set("partitions", topic.Partitions)
 	errSet.Set("replication_factor", topic.ReplicationFactor)
+	if topic.Config["segment.bytes"] != nil && meta.(*LazyClient).Config.IsAWSMSKServerless {
+		// Prevent segment.bytes from being set in AWS MSK Serverless
+		delete(topic.Config, "segment.bytes")
+	}
 	errSet.Set("config", topic.Config)
 
 	if errSet.err != nil {
