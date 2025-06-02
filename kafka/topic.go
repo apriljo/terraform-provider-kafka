@@ -47,8 +47,14 @@ func ReplicaCount(c sarama.Client, topic string, partitions []int32) (int, error
 }
 
 func configToResources(topic Topic, c *Config) []*sarama.AlterConfigsResource {
-	if c.IsAWSMSKServerless && topic.Config["cleanup.policy"] != nil {
-		delete(topic.Config, "cleanup.policy")
+	if topic.Config["cleanup.policy"] != nil {
+		re := regexp.MustCompile(`(?i)kafka-serverless\.(.*)\.amazonaws\.com`)
+		for _, broker := range *c.BootstrapServers {
+			if re.MatchString(broker) {
+				// MSK Serverless does not support updating cleanup.policy
+				delete(topic.Config, "cleanup.policy")
+			}
+		}
 	}
 	return []*sarama.AlterConfigsResource{
 		{
